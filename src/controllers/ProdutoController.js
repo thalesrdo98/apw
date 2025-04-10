@@ -1,47 +1,50 @@
-import { ProdutoService } from "../services/ProdutoService.js";
+const ProdutoService = require('../services/ProdutoService');
+const produtoService = new ProdutoService();
 
-export const ProdutoController = {
-    async carregarProdutos() {
-        const tabela = document.querySelector("#tabela-produtos");
-        if (!tabela) return;
-
-        tabela.innerHTML = "";
-
+class ProdutoController {
+    
+    listarProdutos(req, res) {
         try {
-            const produtos = await ProdutoService.getProdutos();
-
-            produtos.forEach(produto => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${produto.id}</td>
-                    <td>${produto.nome}</td>
-                    <td>R$ ${produto.preco.toFixed(2)}</td>
-                    <td>${produto.descricao}</td>
-                    <td>
-                        <button class="btn btn-warning btn-sm btn-editar" data-id="${produto.id}">Editar</button>
-                        <button class="btn btn-danger btn-sm btn-excluir" data-id="${produto.id}">Excluir</button>
-                    </td>
-                `;
-                tabela.appendChild(tr);
-            });
-
-            // Adiciona eventos aos botões de excluir e editar
-            document.querySelectorAll(".btn-excluir").forEach(botao => {
-                botao.addEventListener("click", async event => {
-                    const id = event.target.dataset.id;
-                    const sucesso = await ProdutoService.excluirProduto(id);
-                    if (sucesso) this.carregarProdutos(); // Recarrega a tabela após exclusão
-                });
-            });
-
-            document.querySelectorAll(".btn-editar").forEach(botao => {
-                botao.addEventListener("click", event => {
-                    const id = event.target.dataset.id;
-                    window.location.href = `../produto-form/produtoForm.html?id=${id}`;
-                });
-            });
+            const produtos = produtoService.listarProdutos();
+            res.status(200).json(produtos);
         } catch (error) {
-            console.error("Erro ao carregar produtos:", error);
+            res.status(500).json({ message: error.message });
         }
     }
-};
+
+    
+    adicionarProduto(req, res) {
+        try {
+            const { nome, descricao, preco } = req.body;
+            const novoProduto = { id: Date.now(), nome, descricao, preco };
+            produtoService.adicionarProduto(novoProduto);
+            res.status(201).json(novoProduto);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+   
+    atualizarProduto(req, res) {
+        try {
+            const id = parseInt(req.params.id);
+            const { nome, descricao, preco } = req.body;
+            const produtoAtualizado = produtoService.atualizarProduto(id, { nome, descricao, preco });
+            res.status(200).json(produtoAtualizado);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    removerProduto(req, res) {
+        try {
+            const id = parseInt(req.params.id);
+            const result = produtoService.removerProduto(id);
+            res.status(200).json(result);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+}
+
+module.exports = new ProdutoController();
